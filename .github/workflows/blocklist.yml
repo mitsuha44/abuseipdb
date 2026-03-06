@@ -22,7 +22,7 @@ jobs:
             -d limit=10000 \
             -H "Key: $API_KEY" \
             -H "Accept: text/plain" \
-            -o abuse.json
+            -o blacklist.txt
 
       - name: Generate release tag
         id: tag
