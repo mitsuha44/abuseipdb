@@ -1,0 +1,60 @@
+name: Build Blacklist Release
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Fetch blacklist
+        env:
+          API_KEY: ${{ secrets.ABUSEIPDB_API_KEY }}
+        run: |
+          curl -G https://api.abuseipdb.com/api/v2/blacklist \
+            -d confidenceMinimum=90 \
+            -d limit=10000 \
+            -H "Key: $API_KEY" \
+            -H "Accept: application/json" \
+            -o abuse.json
+
+      - name: Extract IP addresses
+        run: |
+          jq -r '.data[].ipAddress' abuse.json | sort -u > blacklist.txt
+
+      - name: Generate release tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TODAY=$(date -u +"%Y%m%d")
+          
+          # get all release tags
+          COUNT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/${GITHUB_REPOSITORY}/releases \
+            | jq -r '.[].tag_name' \
+            | grep "^$TODAY" \
+            | wc -l)
+          
+          # increment suffix
+          SUFFIX=$(printf "%02d" $((COUNT + 1)))
+          
+          TAG="$TODAY$SUFFIX"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using release tag: $TAG"
+
+      - name: Create release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          files: blacklist.txt
