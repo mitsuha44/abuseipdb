@@ -10,23 +10,18 @@ You can use it by following inscructions bellow
 ## 1. Create NFTables Table, Set, and Chain
 
 ```bash
-# Create table
 sudo nft add table inet abuse
 
-# Create IPv4 set for blacklisted IPs
-sudo nft 'add set inet abuse blacklist { type ipv4_addr; flags interval; }'
+sudo nft add set inet abuse blacklist { type ipv4_addr; flags interval; }
 
-# Create input chain
-sudo nft 'add chain inet abuse input { type filter hook input priority 0; policy accept; }'
+sudo nft add chain inet abuse input { type filter hook input priority 0; policy accept; }
 
-# Add drop rule for blacklisted IPs
-sudo nft 'add rule inet abuse input ip saddr @blacklist drop'
+sudo nft add rule inet abuse input ip saddr @blacklist drop
 ````
 
 ## 2. Add Logging and Counter
 
 ```bash
-# Optional: log and count blocked packets
 sudo nft add rule inet abuse input ip saddr @blacklist counter log prefix \"[ABUSE IP] \" drop
 ```
 
