@@ -86,7 +86,7 @@ sudo crontab -e
 Add the following line:
 
 ```cron
-0 */12 * * * /usr/local/bin/update-blacklist.sh >> /var/log/blacklist-update.log 2>&1
+0 */12 * * * /usr/local/bin/update-blacklist.sh >> /var/log/update-blacklist.log 2>&1
 ```
 
 Verify the cron job:
