@@ -101,7 +101,7 @@ sudo /usr/local/bin/update-blacklist.sh
 You can quickly check amount of blocked attempts for last 24 hours with:
 
 ```bash
-sudo journalctl -k --since "24 hours ago" | grep -c "\[ABUSE IP\]"
+sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE IP"
 ```
 
 ## Notes
