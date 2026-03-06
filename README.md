@@ -65,15 +65,11 @@ echo -e "\nDone updating nftables blacklist."
 EOF
 ```
 
----
-
 ## 3. Make the Script Executable
 
 ```bash
 sudo chmod +x /usr/local/bin/update-blacklist.sh
 ```
-
----
 
 ## 4. Add Cron Job
 
@@ -83,10 +79,10 @@ Run the script automatically every 12 hours:
 sudo crontab -e
 ```
 
-Add the following line:
+Github workflow makes a release every 6 hours, we will fetch new IPs 10 minutes after release
 
 ```cron
-0 */12 * * * /usr/local/bin/update-blacklist.sh >> /var/log/update-blacklist.log 2>&1
+10 */6 * * * /usr/local/bin/update-blacklist.sh >> /var/log/update-blacklist.log 2>&1
 ```
 
 Verify the cron job:
@@ -94,10 +90,13 @@ Verify the cron job:
 ```bash
 sudo crontab -l
 ```
+## 5. (Optional) Run  it manually
 
----
+```bash
+sudo /usr/local/bin/update-blacklist.sh
+```
 
-## 5. Logs
+## 6. Check Logs
 
 You can quickly check amount of blocked attempts for last 24 hours with:
 
