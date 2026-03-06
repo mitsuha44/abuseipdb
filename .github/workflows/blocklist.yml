@@ -2,7 +2,7 @@ name: Build Blacklist Release
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "1 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
           API_KEY: ${{ secrets.ABUSEIPDB_API_KEY }}
         run: |
           curl -G https://api.abuseipdb.com/api/v2/blacklist?ipVersion=4 \
-            -d confidenceMinimum=90 \
+            -d confidenceMinimum=95 \
             -d limit=10000 \
             -H "Key: $API_KEY" \
             -H "Accept: text/plain" \
