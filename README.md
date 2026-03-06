@@ -73,7 +73,7 @@ sudo chmod +x /usr/local/bin/update-blacklist.sh
 
 ## 4. Add Cron Job
 
-Run the script automatically every 12 hours:
+Run the script automatically every 6 hours:
 
 ```bash
 sudo crontab -e
