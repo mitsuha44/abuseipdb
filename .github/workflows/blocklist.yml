@@ -1,17 +1,15 @@
 name: Build Blacklist Release
-
 on:
   schedule:
     - cron: "1 */6 * * *"
   workflow_dispatch:
-
+  
 permissions:
   contents: write
-
+  
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Fetch blacklist
         env:
@@ -23,37 +21,37 @@ jobs:
             -H "Key: $API_KEY" \
             -H "Accept: text/plain" \
             -o blacklist.txt
-
-          # Check that file contains at least one IPv4
           if ! grep -qE '([0-9]{1,3}\.){3}[0-9]{1,3}' blacklist.txt; then
             echo "Error: No IPs fetched. Possibly reached API usage limit."
             exit 1
           fi
-    
-      - name: Generate release tag
-        id: tag
+
+      - name: Delete existing release and tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TODAY=$(date -u +"%Y%m%d")
-          
-          # get all release tags
-          COUNT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          RELEASE_IDS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             https://api.github.com/repos/${GITHUB_REPOSITORY}/releases \
-            | jq -r '.[].tag_name' \
-            | grep "^$TODAY" \
-            | wc -l)
-          
-          # increment suffix
-          SUFFIX=$(printf "%02d" $((COUNT + 1)))
-          
-          TAG="$TODAY$SUFFIX"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Using release tag: $TAG"
+            | jq -r '.[].id')
+
+          for ID in $RELEASE_IDS; do
+            TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$ID \
+              | jq -r '.tag_name')
+
+            curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+              https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$ID
+
+            curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+              https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs/tags/$TAG
+          done
+
+      - name: Set release date
+        run: echo "RELEASE_DATE=$(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_ENV
 
       - name: Create release and upload asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.tag.outputs.tag }}
+          tag_name: "blacklist-latest"
+          name: "Blacklist ${{ env.RELEASE_DATE }}"
           files: blacklist.txt
