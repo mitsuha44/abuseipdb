@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SCRIPT_URL="https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/update-blacklist.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/mitsuha44/abuseipdb/refs/heads/main/update-blacklist.sh"
 INSTALL_PATH="/usr/local/bin/update-blacklist.sh"
 
 echo "Installing update-blacklist..."
