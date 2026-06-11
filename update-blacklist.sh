@@ -62,7 +62,6 @@ fi
 # --- Step 1: Download latest blacklist ---
 echo "Downloading latest abuseipdb blacklist..."
 
-# Use -# for progress bar, -f to fail on HTTP errors
 if curl -fL -# https://github.com/mitsuha44/abuseipdb/releases/latest/download/blacklist.txt -o "$OUTFILE"; then
     echo "Download complete: $OUTFILE"
 else
@@ -98,24 +97,41 @@ done < "$OUTFILE"
 
 echo -e "\nAbuseipdb blacklist updated."
 
-# --- SET2: Load local blocklist ---
+# SKIPA Blocklist
+# --- Step 1: Download latest blacklist ---
+echo "Downloading latest skipa blacklist..."
+
+if curl -fL -# https://raw.githubusercontent.com/tread-lightly/CyberOK_Skipa_ips/refs/heads/main/lists/skipa_cidr.txt -o "$OUTFILE2"; then
+    echo "Download complete: $OUTFILE"
+else
+    echo "Error: Failed to download blacklist!" >&2
+    exit 1
+fi
+
+# --- Step 2: Flush existing nftables set ---
 echo "Flushing existing nftables set $SET2..."
 sudo nft flush set inet abuse "$SET2"
 
-TOTAL2=$(wc -l < "$OUTFILE2")
-echo "Updating nftables blocklist with $TOTAL2 IPs in batches of $BATCH_SIZE..."
+# --- Step 3: Update set in batches ---
+TOTAL=$(wc -l < "$OUTFILE2")
+echo "Updating nftables blacklist with $TOTAL IPv4 IPs in batches of $BATCH_SIZE..."
+
 count=0
 BATCH=()
 while IFS= read -r ip; do
     BATCH+=("$ip")
     count=$((count + 1))
-    if (( ${#BATCH[@]} >= BATCH_SIZE )) || (( count == TOTAL2 )); then
+
+    # when batch is full or last line, add to nft
+    if (( ${#BATCH[@]} >= BATCH_SIZE )) || (( count == TOTAL )); then
         ELEMENTS=$(IFS=, ; echo "${BATCH[*]}")
         sudo nft add element inet abuse "$SET2" { $ELEMENTS }
-        BATCH=()
-        PERCENT=$((count * 100 / TOTAL2))
-        printf "\rProgress: %d/%d (%d%%)" "$count" "$TOTAL2" "$PERCENT"
+        BATCH=()  # clear batch
+
+        # progress percentage only
+        PERCENT=$((count * 100 / TOTAL))
+        printf "\rProgress: %d/%d (%d%%)" "$count" "$TOTAL" "$PERCENT"
     fi
 done < "$OUTFILE2"
-echo -e "\nSkipa blacklist updated"
-echo -e "\nDone updating blocklists"
+
+echo -e "\nAbuseipdb blacklist updated."
