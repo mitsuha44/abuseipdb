@@ -45,6 +45,20 @@ sudo journalctl -k -n 50 -f | grep "ABUSE_abuseipdb"
 sudo journalctl -k -n 50 -f | grep "ABUSE_skipa"
 ```
 
+## 4. Useful commands
+
+### Delete nftables table
+
+```bash
+sudo nft delete table inet abuse
+```
+
+### Check nftables chain
+
+```bash
+sudo nft list chain inet abuse input
+```
+
 ## Notes
 
 * Logs of blocked packets are available in your system logs (`/var/log/kern.log` or `journalctl -k`)
