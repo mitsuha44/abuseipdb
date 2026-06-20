@@ -34,4 +34,4 @@ else
 fi
 
 echo "Done! Run manually with:"
-echo "sudo update-abuse-blacklists"
+echo "update-abuse-blacklists"
