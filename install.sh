@@ -24,5 +24,14 @@ if ! grep -qF "alias update-abuse-blacklists=" ~/.bashrc; then
     echo "✓ Alias added to ~/.bashrc (restart shell or run: source ~/.bashrc)"
 fi
 
+# Install cron job
+CRON_JOB="10 */6 * * * $INSTALL_PATH >> /var/log/update-blacklist.log 2>&1"
+if ! sudo crontab -l 2>/dev/null | grep -qF "$INSTALL_PATH"; then
+    (sudo crontab -l 2>/dev/null; echo "$CRON_JOB") | sudo crontab -
+    echo "✓ Cron job added (runs every 6 hours at :10)"
+else
+    echo "✓ Cron job already exists"
+fi
+
 echo "Done! Run manually with:"
 echo "sudo update-abuse-blacklists"

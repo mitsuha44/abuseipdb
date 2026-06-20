@@ -13,43 +13,36 @@ You can use it by following inscructions bellow
 curl -fsSL https://raw.githubusercontent.com/mitsuha44/abuseipdb/refs/heads/main/install.sh | sudo bash
 ```
 
-## 3. Make the Script Executable
+## 2. Run  it manually once
 
 ```bash
-sudo chmod +x /usr/local/bin/update-blacklist.sh
+update-abuse-blackist
 ```
 
-## 4. Add Cron Job
-
-Run the script automatically every 6 hours:
-
-```bash
-sudo crontab -e
-```
-
-Github workflow makes a release every 6 hours, we will fetch new IPs 10 minutes after release
-
-```cron
-10 */6 * * * /usr/local/bin/update-blacklist.sh >> /var/log/update-blacklist.log 2>&1
-```
-
-Verify the cron job:
-
-```bash
-sudo crontab -l
-```
-## 5. (Optional) Run  it manually
-
-```bash
-sudo /usr/local/bin/update-blacklist.sh
-```
-
-## 6. Check Logs
+## 3. Check Logs
 
 You can quickly check amount of blocked attempts for last 24 hours with:
 
 ```bash
-sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE IP"
+sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE"
+sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_abuseipdb"
+sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_skipa"
+```
+
+Check last 100 elements:
+
+```bash
+sudo journalctl -k -n 100 | grep -c "ABUSE"
+sudo journalctl -k -n 100 | grep -c "ABUSE_abuseipdb"
+sudo journalctl -k -n 100 | grep -c "ABUSE_skipa"
+```
+
+Watch live:
+
+```bash
+sudo journalctl -k -n 50 -f | grep -c "ABUSE"
+sudo journalctl -k -n 50 -f | grep -c "ABUSE_abuseipdb"
+sudo journalctl -k -n 50 -f | grep -c "ABUSE_skipa"
 ```
 
 ## Notes
