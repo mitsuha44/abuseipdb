@@ -32,9 +32,9 @@ sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_skipa"
 Check last 100 elements:
 
 ```bash
-sudo journalctl -k -n 100 | grep -c "ABUSE"
-sudo journalctl -k -n 100 | grep -c "ABUSE_abuseipdb"
-sudo journalctl -k -n 100 | grep -c "ABUSE_skipa"
+sudo journalctl -k -n 100 | grep "ABUSE"
+sudo journalctl -k -n 100 | grep "ABUSE_abuseipdb"
+sudo journalctl -k -n 100 | grep "ABUSE_skipa"
 ```
 
 Watch live:
