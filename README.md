@@ -29,6 +29,12 @@ sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_abuseipdb"
 sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_skipa"
 ```
 
+Check most abused networks (mask /24) for last week:
+
+```bash
+(echo "COUNT    NETWORK"; sudo journalctl -k --since "168 hours ago" | grep "ABUSE" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sed 's/\.[0-9]*$/.0/' | sort | uniq -c | sort -rn | head -20 | awk '{printf "%-8d %s\n", $1, $2}')
+```
+
 Check last 100 elements:
 
 ```bash
