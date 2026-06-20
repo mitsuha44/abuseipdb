@@ -44,17 +44,17 @@ else
 fi
 
 # Add abuseipdb rule if it doesn't exist
-if ! sudo nft list chain inet abuse "$CHAIN" | grep -q "\[ABUSE IP\]"; then
+if ! sudo nft list chain inet abuse "$CHAIN" | grep -q "\[ABUSE_abuseipdb\]"; then
     echo "Adding rule to drop and log blacklist IPs..."
-    sudo nft "add rule inet abuse $CHAIN ip saddr @$SET counter log prefix \"[ABUSE IP] \" drop"
+    sudo nft "add rule inet abuse $CHAIN ip saddr @$SET counter log prefix \"[ABUSE_abuseipdb] \" drop"
 else
     echo "Blacklist rule already exists."
 fi
 
-# Add abuseipdb rule if it doesn't exist
-if ! sudo nft list chain inet abuse "$CHAIN" | grep -q "\[BLOCK IP\]"; then
-    echo "Adding rule to drop blocklist IPs..."
-    sudo nft "add rule inet abuse $CHAIN ip saddr @$SET2 counter log prefix \"[SKIPA IP] \" drop"
+# Add skipa rule if it doesn't exist
+if ! sudo nft list chain inet abuse "$CHAIN" | grep -q "\[ABUSE_skipa\]"; then
+    echo "Adding rule to drop skipa IPs..."
+    sudo nft "add rule inet abuse $CHAIN ip saddr @$SET2 counter log prefix \"[ABUSE_skipa] \" drop"
 else
     echo "Blocklist rule already exists."
 fi
