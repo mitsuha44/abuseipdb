@@ -37,12 +37,12 @@ sudo journalctl -k -n 100 | grep "ABUSE_abuseipdb"
 sudo journalctl -k -n 100 | grep "ABUSE_skipa"
 ```
 
-Watch live:
+Watch live last 50 elements:
 
 ```bash
-sudo journalctl -k -n 50 -f | grep -c "ABUSE"
-sudo journalctl -k -n 50 -f | grep -c "ABUSE_abuseipdb"
-sudo journalctl -k -n 50 -f | grep -c "ABUSE_skipa"
+sudo journalctl -k -n 50 -f | grep "ABUSE"
+sudo journalctl -k -n 50 -f | grep "ABUSE_abuseipdb"
+sudo journalctl -k -n 50 -f | grep "ABUSE_skipa"
 ```
 
 ## Notes
