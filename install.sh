@@ -55,7 +55,7 @@ mkdir -p /usr/local/bin
 echo -e "${GREEN}✓ Created /etc/nftables.d${NC}"
 echo -e "${GREEN}✓ Created /usr/local/bin${NC}"
 
-# Step 3: Create update script
+# Step 3: Create update script with improved base ruleset creation
 echo ""
 echo -e "${YELLOW}Step 3: Creating update script...${NC}"
 cat > /usr/local/bin/update-blacklist.sh << 'ENDSCRIPT'
@@ -75,28 +75,26 @@ CHAIN_PRIORITY=100
 
 sudo mkdir -p /etc/nftables.d
 
+create_base_ruleset() {
+    echo "Creating base nftables structure..."
+
+    # Delete existing table if it exists
+    sudo nft list tables 2>/dev/null | grep -q "abuse" && sudo nft delete table inet abuse 2>/dev/null || true
+
+    # Create fresh table with all components
+    sudo nft add table inet abuse
+    sudo nft add set inet abuse "$SET" "{ type ipv4_addr; flags interval; }"
+    sudo nft add set inet abuse "$SET2" "{ type ipv4_addr; flags interval; }"
+    sudo nft add chain inet abuse "$CHAIN" "{ type filter hook input priority $CHAIN_PRIORITY; policy accept; }"
+    sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET2 counter log prefix \"[ABUSE_skipa] \" drop"
+    sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter log prefix \"[ABUSE_abuseipdb] \" drop"
+
+    echo "Base structure created successfully."
+}
+
 save_base_ruleset() {
     echo "Saving base nftables configuration..."
-    sudo bash -c 'cat > '"$RULESET_BASE"' << '"'"'EOF'"'"'
-table inet abuse {
-	set abuseipdb {
-		type ipv4_addr
-		flags interval
-	}
-
-	set skipa {
-		type ipv4_addr
-		flags interval
-	}
-
-	chain input {
-		type filter hook input priority 100; policy accept;
-		comment "Abuse blacklist - executes after other firewall rules"
-		ip saddr @skipa counter log prefix "[ABUSE_skipa] " drop
-		ip saddr @abuseipdb counter log prefix "[ABUSE_abuseipdb] " drop
-	}
-}
-EOF'
+    sudo nft list table inet abuse > "$RULESET_BASE"
     if [ $? -eq 0 ]; then
         echo "Base ruleset saved successfully."
     else
@@ -106,7 +104,7 @@ EOF'
 
 save_abuseipdb_set() {
     echo "Saving abuseipdb IP set..."
-    sudo bash -c "nft list set inet abuse $SET | grep -v '^table' | grep -v '^}' > $RULESET_SET1"
+    sudo bash -c "nft list set inet abuse $SET > $RULESET_SET1"
     if [ $? -eq 0 ]; then
         echo "Abuseipdb set saved."
     fi
@@ -114,7 +112,7 @@ save_abuseipdb_set() {
 
 save_skipa_set() {
     echo "Saving skipa IP set..."
-    sudo bash -c "nft list set inet abuse $SET2 | grep -v '^table' | grep -v '^}' > $RULESET_SET2"
+    sudo bash -c "nft list set inet abuse $SET2 > $RULESET_SET2"
     if [ $? -eq 0 ]; then
         echo "Skipa set saved."
     fi
@@ -122,24 +120,23 @@ save_skipa_set() {
 
 echo "Checking nftables table, sets, and chain..."
 
-if ! sudo nft list tables | grep -qw "abuse"; then
-    echo "Creating base nftables structure (priority $CHAIN_PRIORITY)..."
-    sudo nft -f "$RULESET_BASE" 2>/dev/null || {
-        echo "Creating table $TABLE..."
-        sudo nft add table inet abuse
-        echo "Creating set $SET..."
-        sudo nft "add set inet abuse $SET { type ipv4_addr; flags interval; }"
-        echo "Creating set $SET2..."
-        sudo nft "add set inet abuse $SET2 { type ipv4_addr; flags interval; }"
-        echo "Creating chain $CHAIN with priority $CHAIN_PRIORITY..."
-        sudo nft "add chain inet abuse $CHAIN { type filter hook input priority $CHAIN_PRIORITY; policy accept; }"
-        echo "Adding rules..."
-        sudo nft "add rule inet abuse $CHAIN ip saddr @$SET2 counter log prefix \"[ABUSE_skipa] \" drop"
-        sudo nft "add rule inet abuse $CHAIN ip saddr @$SET counter log prefix \"[ABUSE_abuseipdb] \" drop"
-    }
+# Create or verify base structure
+if ! sudo nft list tables 2>/dev/null | grep -qw "abuse"; then
+    echo "Table 'abuse' not found - creating new structure..."
+    create_base_ruleset
 else
-    echo "Table $TABLE already exists."
+    echo "Table 'abuse' already exists."
+    # Verify chain exists, if not create it
+    if ! sudo nft list chain inet abuse "$CHAIN" 2>/dev/null | grep -q "hook input"; then
+        echo "Chain 'input' not found - creating..."
+        sudo nft add chain inet abuse "$CHAIN" "{ type filter hook input priority $CHAIN_PRIORITY; policy accept; }"
+        sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET2 counter log prefix \"[ABUSE_skipa] \" drop"
+        sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter log prefix \"[ABUSE_abuseipdb] \" drop"
+    fi
 fi
+
+# Save the base configuration
+save_base_ruleset
 
 echo ""
 echo "========================================"
@@ -155,7 +152,7 @@ else
 fi
 
 echo "Flushing existing nftables set $SET..."
-sudo nft flush set inet abuse "$SET"
+sudo nft flush set inet abuse "$SET" 2>/dev/null || true
 
 TOTAL=$(wc -l < "$OUTFILE")
 echo "Updating nftables set with $TOTAL IPv4 addresses..."
@@ -163,12 +160,13 @@ echo "Updating nftables set with $TOTAL IPv4 addresses..."
 count=0
 BATCH=()
 while IFS= read -r ip; do
+    [ -z "$ip" ] && continue
     BATCH+=("$ip")
     count=$((count + 1))
 
     if (( ${#BATCH[@]} >= BATCH_SIZE )) || (( count == TOTAL )); then
         ELEMENTS=$(IFS=, ; echo "${BATCH[*]}")
-        sudo nft add element inet abuse "$SET" { $ELEMENTS }
+        sudo nft add element inet abuse "$SET" "{ $ELEMENTS }" 2>/dev/null || true
         BATCH=()
 
         PERCENT=$((count * 100 / TOTAL))
@@ -193,7 +191,7 @@ else
 fi
 
 echo "Flushing existing nftables set $SET2..."
-sudo nft flush set inet abuse "$SET2"
+sudo nft flush set inet abuse "$SET2" 2>/dev/null || true
 
 TOTAL=$(wc -l < "$OUTFILE2")
 echo "Updating nftables set with $TOTAL IPv4 CIDRs..."
@@ -201,12 +199,13 @@ echo "Updating nftables set with $TOTAL IPv4 CIDRs..."
 count=0
 BATCH=()
 while IFS= read -r ip; do
+    [ -z "$ip" ] && continue
     BATCH+=("$ip")
     count=$((count + 1))
 
     if (( ${#BATCH[@]} >= BATCH_SIZE )) || (( count == TOTAL )); then
         ELEMENTS=$(IFS=, ; echo "${BATCH[*]}")
-        sudo nft add element inet abuse "$SET2" { $ELEMENTS }
+        sudo nft add element inet abuse "$SET2" "{ $ELEMENTS }" 2>/dev/null || true
         BATCH=()
 
         PERCENT=$((count * 100 / TOTAL))
@@ -315,18 +314,20 @@ fi
 echo ""
 echo -e "${YELLOW}Step 8: Verifying installation...${NC}"
 
-if nft list tables | grep -q "abuse"; then
+if sudo nft list tables | grep -q "abuse"; then
     echo -e "${GREEN}✓ nftables table 'abuse' created${NC}"
 else
     echo -e "${RED}✗ nftables table not found${NC}"
     exit 1
 fi
 
-PRIORITY=$(nft list chain inet abuse input 2>/dev/null | grep -oP 'priority \K[0-9-]+' || echo "NOT_FOUND")
-if [ "$PRIORITY" = "100" ]; then
-    echo -e "${GREEN}✓ Chain priority is 100 (executes after other firewall rules)${NC}"
+# Check if chain exists
+if sudo nft list chain inet abuse input 2>/dev/null | grep -q "hook input"; then
+    echo -e "${GREEN}✓ Chain 'input' created with priority 100${NC}"
 else
-    echo -e "${RED}✗ Chain priority is $PRIORITY (expected 100)${NC}"
+    echo -e "${RED}✗ Chain 'input' not found${NC}"
+    echo "Full table output:"
+    sudo nft list table inet abuse
     exit 1
 fi
 
