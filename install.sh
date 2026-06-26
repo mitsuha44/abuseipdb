@@ -1,13 +1,11 @@
 #!/bin/bash
 
 ################################################################################
-# Persistent nftables Abuse Blacklist with UFW Integration
+# Persistent nftables Abuse Blacklist
 #
 # Install with: curl -fsSL https://raw.github.../install.sh | sudo bash
 #
-# This script installs a two-layer firewall:
-# - Layer 1: UFW (priority 0)
-# - Layer 2: Abuse Blacklist (priority 100)
+# Installs nftables rules with priority 100 to run AFTER other firewall rules
 ################################################################################
 
 set -e
@@ -27,7 +25,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║   Installing Persistent nftables Abuse Blacklist with UFW      ║${NC}"
+echo -e "${BLUE}║   Installing Persistent nftables Abuse Blacklist               ║${NC}"
+echo -e "${BLUE}║   (Rules execute with priority 100 - after other firewalls)   ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -48,27 +47,17 @@ if [ $MISSING_DEPS -eq 1 ]; then
     exit 1
 fi
 
-# Step 2: Check UFW
+# Step 2: Create directories
 echo ""
-echo -e "${YELLOW}Step 2: Checking UFW status...${NC}"
-if systemctl is-active --quiet ufw; then
-    echo -e "${GREEN}✓ UFW is running${NC}"
-else
-    echo -e "${YELLOW}⚠ UFW is not running. Enabling now...${NC}"
-    ufw enable --force > /dev/null 2>&1 || true
-fi
-
-# Step 3: Create directories
-echo ""
-echo -e "${YELLOW}Step 3: Creating directories...${NC}"
+echo -e "${YELLOW}Step 2: Creating directories...${NC}"
 mkdir -p /etc/nftables.d
 mkdir -p /usr/local/bin
 echo -e "${GREEN}✓ Created /etc/nftables.d${NC}"
 echo -e "${GREEN}✓ Created /usr/local/bin${NC}"
 
-# Step 4: Create update script
+# Step 3: Create update script
 echo ""
-echo -e "${YELLOW}Step 4: Creating update script...${NC}"
+echo -e "${YELLOW}Step 3: Creating update script...${NC}"
 cat > /usr/local/bin/update-blacklist.sh << 'ENDSCRIPT'
 #!/bin/bash
 
@@ -102,7 +91,7 @@ table inet abuse {
 
 	chain input {
 		type filter hook input priority 100; policy accept;
-		comment "Abuse blacklist - runs AFTER UFW"
+		comment "Abuse blacklist - executes after other firewall rules"
 		ip saddr @skipa counter log prefix "[ABUSE_skipa] " drop
 		ip saddr @abuseipdb counter log prefix "[ABUSE_abuseipdb] " drop
 	}
@@ -237,8 +226,8 @@ ENDSCRIPT
 chmod 755 /usr/local/bin/update-blacklist.sh
 echo -e "${GREEN}✓ Created: /usr/local/bin/update-blacklist.sh${NC}"
 
-# Step 5: Create loader script
-echo -e "${YELLOW}Step 5: Creating boot loader script...${NC}"
+# Step 4: Create loader script
+echo -e "${YELLOW}Step 4: Creating boot loader script...${NC}"
 cat > /usr/local/bin/load-nftables-blacklist.sh << 'ENDLOADER'
 #!/bin/bash
 
@@ -280,14 +269,13 @@ ENDLOADER
 chmod 755 /usr/local/bin/load-nftables-blacklist.sh
 echo -e "${GREEN}✓ Created: /usr/local/bin/load-nftables-blacklist.sh${NC}"
 
-# Step 6: Create systemd service
-echo -e "${YELLOW}Step 6: Creating systemd service...${NC}"
+# Step 5: Create systemd service
+echo -e "${YELLOW}Step 5: Creating systemd service...${NC}"
 cat > /etc/systemd/system/abuse-blacklist.service << 'ENDSERVICE'
 [Unit]
-Description=Load nftables abuse blacklist rules (after UFW)
-After=ufw.service nftables.service network-online.target
+Description=Load nftables abuse blacklist rules
+After=network-online.target
 Wants=network-online.target
-PartOf=ufw.service
 
 [Service]
 Type=oneshot
@@ -301,18 +289,18 @@ ENDSERVICE
 chmod 644 /etc/systemd/system/abuse-blacklist.service
 echo -e "${GREEN}✓ Created: /etc/systemd/system/abuse-blacklist.service${NC}"
 
-# Step 7: Configure systemd
+# Step 6: Configure systemd
 echo ""
-echo -e "${YELLOW}Step 7: Configuring systemd...${NC}"
+echo -e "${YELLOW}Step 6: Configuring systemd...${NC}"
 systemctl daemon-reload
 echo -e "${GREEN}✓ Systemd daemon reloaded${NC}"
 
 systemctl enable abuse-blacklist.service
 echo -e "${GREEN}✓ Service enabled for auto-start${NC}"
 
-# Step 8: Run initial update
+# Step 7: Run initial update
 echo ""
-echo -e "${YELLOW}Step 8: Running initial blacklist update...${NC}"
+echo -e "${YELLOW}Step 7: Running initial blacklist update...${NC}"
 echo "This may take a few minutes..."
 echo ""
 
@@ -323,9 +311,9 @@ else
     exit 1
 fi
 
-# Step 9: Verify
+# Step 8: Verify
 echo ""
-echo -e "${YELLOW}Step 9: Verifying installation...${NC}"
+echo -e "${YELLOW}Step 8: Verifying installation...${NC}"
 
 if nft list tables | grep -q "abuse"; then
     echo -e "${GREEN}✓ nftables table 'abuse' created${NC}"
@@ -336,7 +324,7 @@ fi
 
 PRIORITY=$(nft list chain inet abuse input 2>/dev/null | grep -oP 'priority \K[0-9-]+' || echo "NOT_FOUND")
 if [ "$PRIORITY" = "100" ]; then
-    echo -e "${GREEN}✓ Chain priority is 100 (correct - runs after UFW)${NC}"
+    echo -e "${GREEN}✓ Chain priority is 100 (executes after other firewall rules)${NC}"
 else
     echo -e "${RED}✗ Chain priority is $PRIORITY (expected 100)${NC}"
     exit 1
@@ -362,9 +350,12 @@ echo -e "${BLUE}║            ✓ Installation Complete!                       
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-echo -e "${GREEN}Your system is now protected with:${NC}"
-echo "  • Layer 1: UFW firewall (priority 0)"
-echo "  • Layer 2: Abuse blacklist table (priority 100)"
+echo -e "${GREEN}nftables abuse blacklist is now installed and running${NC}"
+echo ""
+echo "Rules configuration:"
+echo "  • Table: inet abuse"
+echo "  • Priority: 100 (executes after other firewall rules)"
+echo "  • Sets: abuseipdb, skipa"
 echo ""
 
 echo -e "${YELLOW}Next steps:${NC}"
@@ -374,7 +365,7 @@ echo "   sudo crontab -e"
 echo "   Add: 0 2 * * * /usr/local/bin/update-blacklist.sh > /var/log/blacklist-update.log 2>&1"
 echo ""
 echo "2. Monitor blocks:"
-echo "   sudo journalctl -f | grep -E 'UFW|ABUSE_'"
+echo "   sudo journalctl -f | grep ABUSE_"
 echo ""
 echo "3. Check rules:"
 echo "   sudo nft list table inet abuse"
