@@ -55,9 +55,19 @@ mkdir -p /usr/local/bin
 echo -e "${GREEN}✓ Created /etc/nftables.d${NC}"
 echo -e "${GREEN}✓ Created /usr/local/bin${NC}"
 
-# Step 3: Create update script with improved base ruleset creation
+# Step 3: Remove old nftables table if it exists
 echo ""
-echo -e "${YELLOW}Step 3: Creating update script...${NC}"
+echo -e "${YELLOW}Step 3: Removing old nftables table...${NC}"
+if sudo nft list tables 2>/dev/null | grep -q "table inet abuse"; then
+    sudo nft delete table inet abuse 2>/dev/null || true
+    echo -e "${GREEN}✓ Removed existing nftables table 'abuse'${NC}"
+else
+    echo -e "${GREEN}✓ No existing nftables table 'abuse' found${NC}"
+fi
+
+# Step 4: Create update script with improved base ruleset creation
+echo ""
+echo -e "${YELLOW}Step 4: Creating update script...${NC}"
 cat > /usr/local/bin/update-blacklist.sh << 'ENDSCRIPT'
 #!/bin/bash
 
@@ -257,8 +267,8 @@ ENDSCRIPT
 chmod 755 /usr/local/bin/update-blacklist.sh
 echo -e "${GREEN}✓ Created: /usr/local/bin/update-blacklist.sh${NC}"
 
-# Step 4: Create loader script
-echo -e "${YELLOW}Step 4: Creating boot loader script...${NC}"
+# Step 5: Create loader script
+echo -e "${YELLOW}Step 5: Creating boot loader script...${NC}"
 cat > /usr/local/bin/load-nftables-blacklist.sh << 'ENDLOADER'
 #!/bin/bash
 
@@ -300,8 +310,8 @@ ENDLOADER
 chmod 755 /usr/local/bin/load-nftables-blacklist.sh
 echo -e "${GREEN}✓ Created: /usr/local/bin/load-nftables-blacklist.sh${NC}"
 
-# Step 5: Create systemd service
-echo -e "${YELLOW}Step 5: Creating systemd service...${NC}"
+# Step 6: Create systemd service
+echo -e "${YELLOW}Step 6: Creating systemd service...${NC}"
 cat > /etc/systemd/system/abuse-blacklist.service << 'ENDSERVICE'
 [Unit]
 Description=Load nftables abuse blacklist rules
@@ -320,18 +330,18 @@ ENDSERVICE
 chmod 644 /etc/systemd/system/abuse-blacklist.service
 echo -e "${GREEN}✓ Created: /etc/systemd/system/abuse-blacklist.service${NC}"
 
-# Step 6: Configure systemd
+# Step 7: Configure systemd
 echo ""
-echo -e "${YELLOW}Step 6: Configuring systemd...${NC}"
+echo -e "${YELLOW}Step 7: Configuring systemd...${NC}"
 systemctl daemon-reload
 echo -e "${GREEN}✓ Systemd daemon reloaded${NC}"
 
 systemctl enable abuse-blacklist.service
 echo -e "${GREEN}✓ Service enabled for auto-start${NC}"
 
-# Step 7: Run initial update
+# Step 8: Run initial update
 echo ""
-echo -e "${YELLOW}Step 7: Running initial blacklist update...${NC}"
+echo -e "${YELLOW}Step 8: Running initial blacklist update...${NC}"
 echo "This may take a few minutes..."
 echo ""
 
@@ -342,9 +352,9 @@ else
     exit 1
 fi
 
-# Step 8: Verify
+# Step 9: Verify
 echo ""
-echo -e "${YELLOW}Step 8: Verifying installation...${NC}"
+echo -e "${YELLOW}Step 9: Verifying installation...${NC}"
 
 if sudo nft list tables | grep -q "abuse"; then
     echo -e "${GREEN}✓ nftables table 'abuse' created${NC}"
