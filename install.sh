@@ -75,8 +75,23 @@ CHAIN_PRIORITY=100
 
 sudo mkdir -p /etc/nftables.d
 
+echo "Checking nftables table, sets, and chain..."
+
+# DEBUG: Print variables before creating
+echo "DEBUG: CHAIN_PRIORITY=$CHAIN_PRIORITY"
+echo "DEBUG: CHAIN=$CHAIN"
+echo "DEBUG: SET=$SET"
+echo "DEBUG: SET2=$SET2"
+
 create_base_ruleset() {
     echo "Creating base nftables structure..."
+
+    # Verify variable is set
+    if [ -z "$CHAIN_PRIORITY" ]; then
+        echo "ERROR: CHAIN_PRIORITY not defined!" >&2
+        echo "ERROR: CHAIN_PRIORITY not defined!" >&2
+        return 1
+    fi
 
     # Delete existing table if it exists
     sudo nft list tables 2>/dev/null | grep -q "abuse" && sudo nft delete table inet abuse 2>/dev/null || true
