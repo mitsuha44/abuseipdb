@@ -5,7 +5,7 @@
 #
 # Install with: curl -fsSL https://raw.github.../install.sh | sudo bash
 #
-# Installs nftables rules with priority 100 to run AFTER other firewall rules
+# Installs nftables rules with priority 5 to run AFTER other firewall rules
 ################################################################################
 
 set -e
@@ -26,7 +26,7 @@ fi
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   Installing Persistent nftables Abuse Blacklist               ║${NC}"
-echo -e "${BLUE}║   (Rules execute with priority 100 - after other firewalls)   ║${NC}"
+echo -e "${BLUE}║   (Rules execute with priority 5 - after other firewalls)   ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -71,7 +71,7 @@ RULESET_BASE="/etc/nftables.d/abuse-base.nft"
 RULESET_SET1="/etc/nftables.d/abuseipdb-set.nft"
 RULESET_SET2="/etc/nftables.d/skipa-set.nft"
 BATCH_SIZE=1000
-CHAIN_PRIORITY=100
+CHAIN_PRIORITY=5
 
 sudo mkdir -p /etc/nftables.d
 
@@ -88,7 +88,6 @@ create_base_ruleset() {
 
     # Verify variable is set
     if [ -z "$CHAIN_PRIORITY" ]; then
-        echo "ERROR: CHAIN_PRIORITY not defined!" >&2
         echo "ERROR: CHAIN_PRIORITY not defined!" >&2
         return 1
     fi
@@ -338,7 +337,7 @@ fi
 
 # Check if chain exists
 if sudo nft list chain inet abuse input 2>/dev/null | grep -q "hook input"; then
-    echo -e "${GREEN}✓ Chain 'input' created with priority 100${NC}"
+    echo -e "${GREEN}✓ Chain 'input' created with priority 5${NC}"
 else
     echo -e "${RED}✗ Chain 'input' not found${NC}"
     echo "Full table output:"
