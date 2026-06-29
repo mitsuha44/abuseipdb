@@ -108,8 +108,26 @@ create_base_ruleset() {
 
 save_base_ruleset() {
     echo "Saving base nftables configuration..."
-    sudo nft list table inet abuse > "$RULESET_BASE"
-    if [ $? -eq 0 ]; then
+    cat > "$RULESET_BASE" <<EOF
+table inet abuse {
+    set $SET {
+        type ipv4_addr
+        flags interval
+    }
+
+    set $SET2 {
+        type ipv4_addr
+        flags interval
+    }
+
+    chain $CHAIN {
+        type filter hook input priority $CHAIN_PRIORITY; policy accept;
+        ip saddr @$SET2 counter log prefix "[ABUSE_skipa] " drop
+        ip saddr @$SET counter log prefix "[ABUSE_abuseipdb] " drop
+    }
+}
+EOF
+    if [ -s "$RULESET_BASE" ]; then
         echo "Base ruleset saved successfully."
     else
         echo "Warning: Failed to save base ruleset!" >&2
@@ -369,7 +387,7 @@ echo -e "${GREEN}nftables abuse blacklist is now installed and running${NC}"
 echo ""
 echo "Rules configuration:"
 echo "  • Table: inet abuse"
-echo "  • Priority: 100 (executes after other firewall rules)"
+echo "  • Priority: 5 (executes after other firewall rules)"
 echo "  • Sets: abuseipdb, skipa"
 echo ""
 
