@@ -32,23 +32,27 @@ sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_skipa"
 Check most abused networks (mask /24) for last week:
 
 ```bash
-(echo "COUNT    NETWORK"; sudo journalctl -k --since "168 hours ago" | grep "ABUSE" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sed 's/\.[0-9]*$/.0/' | sort | uniq -c | sort -rn | head -20 | awk '{printf "%-8d %s\n", $1, $2}')
+echo "COUNT    NETWORK"
+sudo journalctl -k --since "168 hours ago" |
+  grep "ABUSE" |
+  grep -oP 'SRC=\K[0-9]{1,3}(\.[0-9]{1,3}){3}' |
+  sed 's/\.[0-9]*$/.0/' |
+  sort | uniq -c | sort -rn |
+  head -20 |
+  awk '{printf "%-8d %s\n", $1, $2}'
 ```
 
-Check last 100 elements:
+Check most abused networks (mask /16) for last week:
 
 ```bash
-sudo journalctl -k -n 100 | grep "ABUSE"
-sudo journalctl -k -n 100 | grep "ABUSE_abuseipdb"
-sudo journalctl -k -n 100 | grep "ABUSE_skipa"
-```
-
-Watch live last 50 elements:
-
-```bash
-sudo journalctl -k -n 50 -f | grep "ABUSE"
-sudo journalctl -k -n 50 -f | grep "ABUSE_abuseipdb"
-sudo journalctl -k -n 50 -f | grep "ABUSE_skipa"
+echo "COUNT    NETWORK"
+sudo journalctl -k --since "168 hours ago" |
+  grep "ABUSE" |
+  grep -oP 'SRC=\K[0-9]{1,3}(\.[0-9]{1,3}){3}' |
+  sed -E 's/^([0-9]+\.[0-9]+)\.[0-9]+\.[0-9]+$/\1.0.0/' |
+  sort | uniq -c | sort -rn |
+  head -20 |
+  awk '{printf "%-8d %s/16\n", $1, $2}'
 ```
 
 ## 4. Useful commands
