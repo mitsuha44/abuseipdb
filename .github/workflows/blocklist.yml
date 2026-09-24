@@ -50,7 +50,7 @@ jobs:
         run: echo "RELEASE_DATE=$(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_ENV
 
       - name: Create release and upload asset
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v6
         with:
           tag_name: "blacklist-latest"
           name: "Blacklist ${{ env.RELEASE_DATE }}"
