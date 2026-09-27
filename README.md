@@ -24,9 +24,13 @@ update-abuse-blackist
 You can quickly check amount of blocked attempts for last 24 hours with:
 
 ```bash
-sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE"
-sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_abuseipdb"
-sudo journalctl -k --since "24 hours ago" | grep -c "ABUSE_skipa"
+sudo journalctl -k --since "24 hours ago" | grep -oE "ABUSE_abuseipdb|ABUSE_skipa|ABUSE" | sort | uniq -c
+```
+
+or also with usefull ufw info:
+
+```bash
+sudo journalctl -k --since "24 hours ago" | grep -oE "ABUSE_abuseipdb|ABUSE_skipa|ABUSE|UFW BLOCK|UFW ALLOW|UFW AUDIT" | sort | uniq -c
 ```
 
 Check most abused networks (mask /24) for last week:
