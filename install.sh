@@ -112,8 +112,8 @@ create_base_ruleset() {
     sudo nft add chain inet abuse "$CHAIN" "{ type filter hook input priority $CHAIN_PRIORITY; policy accept; }"
     sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET2 counter limit rate 5/minute burst 10 packets log prefix \"[ABUSE_skipa] \" level info"
     sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET2 counter drop"
-    sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter limit rate 5/minute burst 10 packets log prefix \"[ABUSE_skipa] \" level info"
-    sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter log prefix \"[ABUSE_abuseipdb] \" drop"
+    sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter limit rate 5/minute burst 10 packets log prefix \"[ABUSE_abuseipdb] \" level info"
+    sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter drop"
 
     echo "Base structure created successfully."
 }
@@ -184,8 +184,8 @@ else
         sudo nft add chain inet abuse "$CHAIN" "{ type filter hook input priority $CHAIN_PRIORITY; policy accept; }"
         sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET2 counter limit rate 5/minute burst 10 packets log prefix \"[ABUSE_skipa] \" level info"
         sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET2 counter drop"
-        sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter limit rate 5/minute burst 10 packets log prefix \"[ABUSE_skipa] \" level info"
-        sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter log prefix \"[ABUSE_abuseipdb] \" drop"
+        sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter limit rate 5/minute burst 10 packets log prefix \"[ABUSE_abuseipdb] \" level info"
+        sudo nft add rule inet abuse "$CHAIN" "ip saddr @$SET counter drop"
     fi
 fi
 
