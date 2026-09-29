@@ -133,8 +133,12 @@ table inet abuse {
     }
 
     chain $CHAIN {
-        type filter hook input priority $CHAIN_PRIORITY; policy accept;
-        
+        type filter hook input priority 5; policy accept;
+    }
+
+    flush chain inet abuse input
+
+    chain $CHAIN {
         ip saddr @$SET2 counter limit rate 5/minute burst 10 packets log prefix "[ABUSE_skipa] " level info
         ip saddr @$SET2 counter drop
         
