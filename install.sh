@@ -279,77 +279,77 @@ ENDSCRIPT
 chmod 755 /usr/local/bin/update-blacklist.sh
 echo -e "${GREEN}✓ Created: /usr/local/bin/update-blacklist.sh${NC}"
 
-# Step 5: Create loader script
-echo -e "${YELLOW}Step 5: Creating boot loader script...${NC}"
-cat > /usr/local/bin/load-nftables-blacklist.sh << 'ENDLOADER'
-#!/bin/bash
+# # Step 5: Create loader script
+# echo -e "${YELLOW}Step 5: Creating boot loader script...${NC}"
+# cat > /usr/local/bin/load-nftables-blacklist.sh << 'ENDLOADER'
+# #!/bin/bash
 
-RULESET_BASE="/etc/nftables.d/abuse-base.nft"
-RULESET_SET1="/etc/nftables.d/abuseipdb-set.nft"
-RULESET_SET2="/etc/nftables.d/skipa-set.nft"
+# RULESET_BASE="/etc/nftables.d/abuse-base.nft"
+# RULESET_SET1="/etc/nftables.d/abuseipdb-set.nft"
+# RULESET_SET2="/etc/nftables.d/skipa-set.nft"
 
-sleep 2
+# sleep 2
 
-echo "Loading nftables blacklist rules..." | logger
+# echo "Loading nftables blacklist rules..." | logger
 
-if [ -f "$RULESET_BASE" ]; then
-    echo "Loading base rules..." | logger
-    nft -f "$RULESET_BASE"
-    if [ $? -eq 0 ]; then
-        echo "Base rules loaded." | logger
-    else
-        echo "Failed to load base rules!" | logger
-        exit 1
-    fi
-else
-    echo "Base ruleset not found at $RULESET_BASE" | logger
-    exit 1
-fi
+# if [ -f "$RULESET_BASE" ]; then
+#     echo "Loading base rules..." | logger
+#     nft -f "$RULESET_BASE"
+#     if [ $? -eq 0 ]; then
+#         echo "Base rules loaded." | logger
+#     else
+#         echo "Failed to load base rules!" | logger
+#         exit 1
+#     fi
+# else
+#     echo "Base ruleset not found at $RULESET_BASE" | logger
+#     exit 1
+# fi
 
-if [ -f "$RULESET_SET1" ]; then
-    echo "Loading abuseipdb IP set..." | logger
-    nft -f "$RULESET_SET1" 2>/dev/null || true
-fi
+# if [ -f "$RULESET_SET1" ]; then
+#     echo "Loading abuseipdb IP set..." | logger
+#     nft -f "$RULESET_SET1" 2>/dev/null || true
+# fi
 
-if [ -f "$RULESET_SET2" ]; then
-    echo "Loading skipa IP set..." | logger
-    nft -f "$RULESET_SET2" 2>/dev/null || true
-fi
+# if [ -f "$RULESET_SET2" ]; then
+#     echo "Loading skipa IP set..." | logger
+#     nft -f "$RULESET_SET2" 2>/dev/null || true
+# fi
 
-echo "All blacklist rules loaded." | logger
-ENDLOADER
+# echo "All blacklist rules loaded." | logger
+# ENDLOADER
 
-chmod 755 /usr/local/bin/load-nftables-blacklist.sh
-echo -e "${GREEN}✓ Created: /usr/local/bin/load-nftables-blacklist.sh${NC}"
+# chmod 755 /usr/local/bin/load-nftables-blacklist.sh
+# echo -e "${GREEN}✓ Created: /usr/local/bin/load-nftables-blacklist.sh${NC}"
 
-# Step 6: Create systemd service
-echo -e "${YELLOW}Step 6: Creating systemd service...${NC}"
-cat > /etc/systemd/system/abuse-blacklist.service << 'ENDSERVICE'
-[Unit]
-Description=Load nftables abuse blacklist rules
-After=network-online.target
-Wants=network-online.target
+# # Step 6: Create systemd service
+# echo -e "${YELLOW}Step 6: Creating systemd service...${NC}"
+# cat > /etc/systemd/system/abuse-blacklist.service << 'ENDSERVICE'
+# [Unit]
+# Description=Load nftables abuse blacklist rules
+# After=network-online.target
+# Wants=network-online.target
 
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/load-nftables-blacklist.sh
-RemainAfterExit=yes
+# [Service]
+# Type=oneshot
+# ExecStart=/usr/local/bin/load-nftables-blacklist.sh
+# RemainAfterExit=yes
 
-[Install]
-WantedBy=multi-user.target
-ENDSERVICE
+# [Install]
+# WantedBy=multi-user.target
+# ENDSERVICE
 
-chmod 644 /etc/systemd/system/abuse-blacklist.service
-echo -e "${GREEN}✓ Created: /etc/systemd/system/abuse-blacklist.service${NC}"
+# chmod 644 /etc/systemd/system/abuse-blacklist.service
+# echo -e "${GREEN}✓ Created: /etc/systemd/system/abuse-blacklist.service${NC}"
 
-# Step 7: Configure systemd
-echo ""
-echo -e "${YELLOW}Step 7: Configuring systemd...${NC}"
-systemctl daemon-reload
-echo -e "${GREEN}✓ Systemd daemon reloaded${NC}"
+# # Step 7: Configure systemd
+# echo ""
+# echo -e "${YELLOW}Step 7: Configuring systemd...${NC}"
+# systemctl daemon-reload
+# echo -e "${GREEN}✓ Systemd daemon reloaded${NC}"
 
-systemctl enable abuse-blacklist.service
-echo -e "${GREEN}✓ Service enabled for auto-start${NC}"
+# systemctl enable abuse-blacklist.service
+# echo -e "${GREEN}✓ Service enabled for auto-start${NC}"
 
 # Step 8: Run initial update
 echo ""
