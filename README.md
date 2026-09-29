@@ -13,13 +13,7 @@ You can use it by following inscructions bellow
 curl -fsSL https://raw.githubusercontent.com/mitsuha44/abuseipdb/refs/heads/main/install.sh | sudo bash
 ```
 
-## 2. Run  it manually once
-
-```bash
-update-abuse-blackist
-```
-
-## 3. Check Logs
+## 2. Check Logs
 
 You can quickly check amount of blocked attempts for last 24 hours with:
 
