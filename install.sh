@@ -81,7 +81,7 @@ RULESET_BASE="/etc/nftables.d/abuse-base.nft"
 RULESET_SET1="/etc/nftables.d/abuseipdb-set.nft"
 RULESET_SET2="/etc/nftables.d/skipa-set.nft"
 BATCH_SIZE=1000
-CHAIN_PRIORITY=5
+CHAIN_PRIORITY=1
 
 sudo mkdir -p /etc/nftables.d
 
@@ -133,7 +133,7 @@ table inet abuse {
     }
 
     chain $CHAIN {
-        type filter hook input priority 5; policy accept;
+        type filter hook input priority $CHAIN_PRIORITY; policy accept;
     }
 
     flush chain inet abuse input
