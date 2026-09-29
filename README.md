@@ -61,13 +61,19 @@ sudo journalctl -k --since "168 hours ago" |
 
 ## 4. Useful commands
 
-### Delete nftables table
+Delete nftables table:
 
 ```bash
 sudo nft delete table inet abuse
 ```
 
-### Check nftables chain
+Check nftables table:
+
+```bash
+sudo nft list table inet abuse
+```
+
+Check nftables chain:
 
 ```bash
 sudo nft list chain inet abuse input
