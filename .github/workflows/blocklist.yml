@@ -1,7 +1,7 @@
 name: Build Blacklist Release
 on:
   schedule:
-    - cron: "1 */12 * * *"
+    - cron: "1 */8 * * *"
   workflow_dispatch:
   
 permissions:
