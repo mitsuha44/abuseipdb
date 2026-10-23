@@ -221,79 +221,37 @@ ENDSCRIPT
 chmod 755 /usr/local/bin/update-blacklist.sh
 echo -e "${GREEN}✓ Created: /usr/local/bin/update-blacklist.sh${NC}"
 
-# Step 5: Create boot loader script
+# Step 5: Persist across reboots via /etc/nftables.conf include
 echo ""
-echo -e "${YELLOW}Step 5: Creating boot loader script...${NC}"
-cat > /usr/local/bin/load-nftables-blacklist.sh << 'ENDLOADER'
-#!/bin/bash
+echo -e "${YELLOW}Step 5: Configuring nftables.conf include...${NC}"
+NFT_CONF="/etc/nftables.conf"
+INCLUDE_LINE='include "/etc/nftables.d/*.nft"'
 
-RULESET_BASE="/etc/nftables.d/abuse-base.nft"
-RULESET_SET1="/etc/nftables.d/abuseipdb-set.nft"
-RULESET_SET2="/etc/nftables.d/skipa-set.nft"
-
-echo "Loading nftables blacklist rules..." | logger -t abuse-blacklist
-
-if [ ! -f "$RULESET_BASE" ]; then
-    echo "Base ruleset not found at $RULESET_BASE" | logger -t abuse-blacklist
-    exit 1
+if [ ! -f "$NFT_CONF" ]; then
+    echo "#!/usr/sbin/nft -f" > "$NFT_CONF"
+    echo -e "${GREEN}✓ Created $NFT_CONF${NC}"
 fi
 
-if ! nft -f "$RULESET_BASE"; then
-    echo "Failed to load base rules!" | logger -t abuse-blacklist
-    exit 1
+if grep -qF "$INCLUDE_LINE" "$NFT_CONF"; then
+    echo -e "${GREEN}✓ Include already present in $NFT_CONF${NC}"
+else
+    cp -a "$NFT_CONF" "${NFT_CONF}.bak.$(date +%s)"
+    printf '\n# abuse blacklist (added by install.sh)\n%s\n' "$INCLUDE_LINE" >> "$NFT_CONF"
+    echo -e "${GREEN}✓ Added include to $NFT_CONF (backup saved alongside)${NC}"
 fi
-echo "Base rules loaded." | logger -t abuse-blacklist
 
-for f in "$RULESET_SET1" "$RULESET_SET2"; do
-    if [ -f "$f" ]; then
-        if nft -f "$f"; then
-            echo "Loaded $f" | logger -t abuse-blacklist
-        else
-            echo "Failed to load $f" | logger -t abuse-blacklist
-        fi
-    fi
-done
-
-echo "All blacklist rules loaded." | logger -t abuse-blacklist
-ENDLOADER
-
-chmod 755 /usr/local/bin/load-nftables-blacklist.sh
-echo -e "${GREEN}✓ Created: /usr/local/bin/load-nftables-blacklist.sh${NC}"
-
-# Step 6: Create systemd service
+# Step 6: Enable nftables service so the config is loaded at boot
 echo ""
-echo -e "${YELLOW}Step 6: Creating systemd service...${NC}"
-cat > /etc/systemd/system/abuse-blacklist.service << 'ENDSERVICE'
-[Unit]
-Description=Load nftables abuse blacklist rules
-# Run after nftables.service so a "flush ruleset" there can't wipe our table
-After=network-online.target nftables.service
-Wants=network-online.target
+echo -e "${YELLOW}Step 6: Enabling nftables.service...${NC}"
+if systemctl enable nftables.service 2>/dev/null; then
+    echo -e "${GREEN}✓ nftables.service enabled${NC}"
+else
+    echo -e "${YELLOW}! Could not enable nftables.service - enable it manually${NC}"
+fi
 
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/load-nftables-blacklist.sh
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-ENDSERVICE
-
-chmod 644 /etc/systemd/system/abuse-blacklist.service
-echo -e "${GREEN}✓ Created: /etc/systemd/system/abuse-blacklist.service${NC}"
-
-# Step 7: Configure systemd
+# Step 7: Run initial update
 echo ""
-echo -e "${YELLOW}Step 7: Configuring systemd...${NC}"
-systemctl daemon-reload
-echo -e "${GREEN}✓ Systemd daemon reloaded${NC}"
-
-systemctl enable abuse-blacklist.service
-echo -e "${GREEN}✓ Service enabled for auto-start${NC}"
-
-# Step 8: Run initial update
-echo ""
-echo -e "${YELLOW}Step 8: Running initial blacklist update...${NC}"
+echo -e "${YELLOW}Step 7: Running initial blacklist update...${NC}"
 echo "This may take a minute..."
 echo ""
 
@@ -304,9 +262,9 @@ else
     exit 1
 fi
 
-# Step 9: Verify
+# Step 8: Verify
 echo ""
-echo -e "${YELLOW}Step 9: Verifying installation...${NC}"
+echo -e "${YELLOW}Step 8: Verifying installation...${NC}"
 
 if nft list tables | grep -q "abuse"; then
     echo -e "${GREEN}✓ nftables table 'abuse' created${NC}"
@@ -350,7 +308,7 @@ echo "Rules configuration:"
 echo "  • Table: inet abuse"
 echo "  • Hook: prerouting, priority -300 (before conntrack; covers forwarded traffic)"
 echo "  • Sets: abuseipdb, skipa"
-echo "  • Persistence: abuse-blacklist.service reloads rules at boot"
+echo "  • Persistence: /etc/nftables.conf includes /etc/nftables.d/*.nft (nftables.service)"
 echo ""
 
 echo -e "${YELLOW}Next steps:${NC}"
